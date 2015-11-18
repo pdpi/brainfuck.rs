@@ -5,7 +5,8 @@ pub enum Instruction {
   Incr, Decr, Add(i16),
   Next, Prev,
   Get, Put,
-  Loop(Program)
+  Jump(usize),
+  End
 }
 
 #[derive(PartialEq,Eq)]
@@ -20,65 +21,57 @@ impl Program {
     }
   }
   pub fn parse(s: &String) -> Program {
-    let instrs = Vec::new();
     let mut stack = Vec::new();
-    stack.push(Program { instrs: instrs });
+    let instrs = Vec::new();
+    let mut program = Program { instrs: instrs };
+
     for c in s.chars() {
-      let idx = stack.len() - 1;
       match c {
         '+' => {
-          let frame = &mut stack[idx].instrs;
-          frame.push(Instruction::Incr);
+          program.instrs.push(Instruction::Incr);
         }
         '-' => {
-          let frame = &mut stack[idx].instrs;
-          frame.push(Instruction::Decr);
+          program.instrs.push(Instruction::Decr);
         }
         '>' => {
-          let frame = &mut stack[idx].instrs;
-          frame.push(Instruction::Next);
+          program.instrs.push(Instruction::Next);
         }
         '<' => {
-          let frame = &mut stack[idx].instrs;
-          frame.push(Instruction::Prev);
+          program.instrs.push(Instruction::Prev);
         }
         ',' => {
-          let frame = &mut stack[idx].instrs;
-          frame.push(Instruction::Get);
+          program.instrs.push(Instruction::Get);
         }
         '.' => {
-          let frame = &mut stack[idx].instrs;
-          frame.push(Instruction::Put);
+          program.instrs.push(Instruction::Put);
         }
-        '[' => stack.push(Program { instrs: Vec::new() }),
+        '[' => { stack.push(program.instrs.len()); },
         ']' => {
-          let instrs = stack.pop().unwrap();
-          let idx = stack.len() - 1;
-          let frame = &mut stack[idx].instrs;
-          frame.push(Instruction::Loop(instrs))
+          let idx = stack.pop().unwrap();
+          program.instrs.push(Instruction::Jump(idx));
         }
         _   => ()
       }
     }
-    stack.pop().unwrap()
+    program.instrs.push(Instruction::End);
+    program
   }
 
   pub fn execute(&self, mem: &mut Memory) {
-    for i in &self.instrs {
-      match *i {
+    let mut counter = 0;
+    while self.instrs[counter] != Instruction::End {
+      match self.instrs[counter] {
         Instruction::Incr => mem.incr(),
         Instruction::Decr => mem.decr(),
         Instruction::Add(n) => mem.add(n),
         Instruction::Next => mem.next(),
         Instruction::Prev => mem.prev(),
         Instruction::Put => print!("{}",mem.read() as char),
-        Instruction::Get => panic!("NYI"),
-        Instruction::Loop(ref instrs) => {
-          while mem.read() != 0 {
-            instrs.execute(mem);
-          }
-        }
+        Instruction::Get => (), // panic!("NYI"),
+        Instruction::Jump(idx) => if mem.read() != 0 { counter = idx - 1; },
+        _ => ()
       }
+      counter += 1;
     }
   }
 }
