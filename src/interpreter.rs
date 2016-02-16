@@ -89,5 +89,5 @@ fn it_parses(){
   let p = Program::parse(&"+>[-]".to_string());
   assert!(p.instrs[0] == Instruction::Incr);
   assert!(p.instrs[1] == Instruction::Next);
-  assert!(p.instrs[2] == Instruction::Loop(Program::new(vec![Instruction::Decr])));
+  assert!(p.instrs[2] == Instruction::Jump(2));
 }
