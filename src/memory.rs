@@ -48,17 +48,9 @@ impl Memory {
     }
   }
 
-  pub fn incr(&mut self) { self.add(1) }
-
-  pub fn decr(&mut self) { self.add(-1) }
-
-  pub fn next(&mut self) {
-    self.idx += 1;
+  pub fn seek(&mut self, n: i16) {
+    self.idx += n as i32;
     if self.idx >= 0 && self.pos.len() < self.idx as usize + 1 { self.pos.push(0); }
-  }
-
-  pub fn prev(&mut self) {
-    self.idx -= 1;
     if self.idx < 0 && self.neg.len() < (-1 - self.idx) as usize { self.neg.push(0); }
   }
 }

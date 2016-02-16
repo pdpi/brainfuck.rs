@@ -2,11 +2,11 @@ use memory::Memory;
 
 #[derive(PartialEq,Eq)]
 pub enum Instruction {
-  Incr, Decr, Add(i16),
-  Next, Prev,
+  Add(i16),
+  Seek(i16),
   Get, Put,
-  Jump(usize),
-  End
+  JmpZ(usize), JpNZ(usize),
+  NoOp, End
 }
 
 #[derive(PartialEq,Eq)]
@@ -28,16 +28,16 @@ impl Program {
     for c in s.chars() {
       match c {
         '+' => {
-          program.instrs.push(Instruction::Incr);
+          program.instrs.push(Instruction::Add(1));
         }
         '-' => {
-          program.instrs.push(Instruction::Decr);
+          program.instrs.push(Instruction::Add(-1));
         }
         '>' => {
-          program.instrs.push(Instruction::Next);
+          program.instrs.push(Instruction::Seek(1));
         }
         '<' => {
-          program.instrs.push(Instruction::Prev);
+          program.instrs.push(Instruction::Seek(-1));
         }
         ',' => {
           program.instrs.push(Instruction::Get);
@@ -45,10 +45,14 @@ impl Program {
         '.' => {
           program.instrs.push(Instruction::Put);
         }
-        '[' => { stack.push(program.instrs.len()); },
+        '[' => {
+          stack.push(program.instrs.len());
+          program.instrs.push(Instruction::NoOp);
+        },
         ']' => {
           let idx = stack.pop().unwrap();
-          program.instrs.push(Instruction::Jump(idx));
+          program.instrs.push(Instruction::JpNZ(idx+1));
+          program.instrs[idx] = Instruction::JmpZ(program.instrs.len());
         }
         _   => ()
       }
@@ -61,14 +65,12 @@ impl Program {
     let mut counter = 0;
     while self.instrs[counter] != Instruction::End {
       match self.instrs[counter] {
-        Instruction::Incr => mem.incr(),
-        Instruction::Decr => mem.decr(),
         Instruction::Add(n) => mem.add(n),
-        Instruction::Next => mem.next(),
-        Instruction::Prev => mem.prev(),
+        Instruction::Seek(n) => mem.seek(n),
         Instruction::Put => print!("{}",mem.read() as char),
         Instruction::Get => (), // panic!("NYI"),
-        Instruction::Jump(idx) => if mem.read() != 0 { counter = idx - 1; },
+        Instruction::JpNZ(idx) => if mem.read() != 0 { counter = idx - 1; },
+        Instruction::JmpZ(idx) => if mem.read() == 0 { counter = idx - 1; },
         _ => ()
       }
       counter += 1;
